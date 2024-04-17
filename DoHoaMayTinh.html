@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+    <head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+		<input type="range" min="0" max="100" value="50" id="brightnessRange">
+
+		<script type="importmap">
+	  {
+		"imports": {
+		  "three": "https://unpkg.com/three@0.151.3/build/three.module.js",
+		  "three/addons/": "https://unpkg.com/three@0.151.3/examples/jsm/"
+		}
+	  }
+	</script>
+		<title>DoHoaMayTinh</title>
+	</head>
+	<body>
+        <script type= "module">
+        	import * as THREE from 'three';
+       		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        	import { DragControls } from 'three/addons/controls/DragControls.js';
+        	import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+        	import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+            var textureLoader = new THREE.TextureLoader();
+            const scene = new THREE.Scene()
+            scene.background = new THREE.Color( 0x97FFFF ) // màu nền 
+    		const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.5, 1000)
+            const renderer = new THREE.WebGLRenderer()
+            renderer.setSize(window.innerWidth, window.innerHeight)
+            document.body.appendChild(renderer.domElement)
+
+            const geometry_cube = new THREE.BoxGeometry(2, 2, 2)
+            const geometry_cylinder = new THREE.CylinderGeometry(0.8, .8, .8, 8)
+			//const light = new THREE.AmbientLight( 0x404040,7 ); // soft white light
+			const light = new THREE.DirectionalLight(0xffffff, 2.5); // Điều chỉnh độ sáng ban đầu 
+			light.position.set(-25, 50, 30); // Vị trí góc sáng x,y,z
+			scene.add(light);
+
+			const brightnessRange = document.getElementById('brightnessRange');
+			brightnessRange.addEventListener('input', function() {
+				const xPosition = parseInt(this.value);
+				setBrightness(xPosition);
+			  });
+			  
+			 
+			 
+				
+			// scene.add(cube)
+			// scene.add(cylinder)
+			const loader = new GLTFLoader();
+			let model;
+			loader.load('https://raw.githubusercontent.com/LemmaTem/gltf-models/main/imgoinginsane.gltf', function (gltf) {
+				model = gltf.scene;
+				model.scale.set(0.5, 0.5, 0.5);
+				model.position.set(0, 0, 0);
+				scene.add(model);
+			}, undefined, function (error) {
+				console.error(error);
+			});
+			const loader2 = new GLTFLoader();
+			let model2;
+			loader2.load('https://raw.githubusercontent.com/LemmaTem/gltf-models/main/lowpolycargenerator.gltf', function (gltf) {
+				model2 = gltf.scene;
+				model2.scale.set(0.75, 0.75, 0.75);
+				model2.position.set(0, 0.54, -15);
+				scene.add(model2);
+			}, undefined, function (error) {
+				console.error(error);
+			});
+			
+
+			camera.position.set(-8, 30, 24) // góc nhìn ban đầu của cam
+			// cylinder.position.set(10, 0, 0)
+			// cube.position.set(10, 0, 0)
+
+			function controlCar() {
+				const speed = 0.15; // Điều chỉnh tốc độ khi cần thiết
+				const rotationSpeed = 0.05; // điều khiển tốc độ quay 
+			  //Khởi tạo các thuộc tính keys là fales
+				const keys = {
+				  ArrowUp: false,
+				  ArrowDown: false,
+				  ArrowLeft: false,
+				  ArrowRight: false
+				};
+			  // Khởi tạo phím được nhấn là true
+				function handleKeyDown(event) {
+				  event.preventDefault();
+				  keys[event.code] = true;
+				}
+			    // Khởi tạo phím không được nhấn là fales
+				function handleKeyUp(event) {
+				  event.preventDefault();
+				  keys[event.code] = false;
+				}
+
+				function updateCarPosition() {
+					const movementVector = new THREE.Vector3(0, 0, 0); // lưu chuyển động mong muốn theo x,y,z
+				  //Điều  chỉnh các cách chạy của xe 
+					if (keys.ArrowUp) {
+					  movementVector.z = speed;
+					}
+					if (keys.ArrowDown) {
+					  movementVector.z = -speed;
+					}
+					if (keys.ArrowLeft) {
+					  model2.rotation.y -= rotationSpeed;
+					}
+					if (keys.ArrowRight) {
+					  model2.rotation.y += rotationSpeed;
+					}
+				  
+					// áp dụng vòng xoay cho vector chuyển động 
+					movementVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), model2.rotation.y);
+				  
+					// cập nhập  lại vị trí mới của xe
+					const newPosition = model2.position.clone().add(movementVector);
+				  
+					// xác định giới hạn trong hộp 
+					const minX = -15; // Minimum X coordinate
+					const maxX = 3; // Maximum X coordinate
+					const minZ = -15; // Minimum Z coordinate
+					const maxZ = 15; // Maximum Z coordinate
+				  
+					// Kiếm tra xem vị trí xe có nằm trong giới hạn hộp hay không 
+					if (
+					  newPosition.x >= minX &&
+					  newPosition.x <= maxX &&
+					  newPosition.z >= minZ &&
+					  newPosition.z <= maxZ
+					) {
+					  model2.position.copy(newPosition);
+					} else {
+					  // Ra khỏi giưới hạn thì xe quay lại vị trí ban đầu 
+					  model2.position.set(0,0.54, -15);
+					}
+				  }
+				    
+				  
+			  
+				window.addEventListener('keydown', handleKeyDown);
+				window.addEventListener('keyup', handleKeyUp);
+			  // Luôn cập nhập vị trí hiện tại của xe
+				function animate() {
+				  requestAnimationFrame(animate);
+				  updateCarPosition();
+				  renderer.render(scene, camera);
+				}
+			  
+				animate();
+			}
+			
+			
+			  
+			function setBrightness(xPosition) {
+				const minX = 0;
+				const maxX = 100;
+				const minAzimuthAngle = -Math.PI / 2; // góc phuwong diện tính bằng radien góc bên trái
+				const maxAzimuthAngle = Math.PI / 2; // góc phuwong diện tính bằng radien góc bên phải 
+				const minAltitudeAngle = -Math.PI / 4; // góc phuwong diện tính bằng radien góc hướng xuống
+				const maxAltitudeAngle = Math.PI / 4; // góc phuwong diện tính bằng radien góc hướng lên 
+			
+				// Điều chỉnh góc độ sáng của x từ 0-50 thay đổi 
+				const normalizedX = (xPosition - minX) / (maxX - minX);
+				const azimuthAngle = normalizedX * (maxAzimuthAngle - minAzimuthAngle) + minAzimuthAngle;
+				const altitudeAngle = normalizedX * (maxAltitudeAngle - minAltitudeAngle) + minAltitudeAngle;
+			
+				// tính tóna vị trí của đèn dựa trên x,y,z 
+				const distance = 150; // độ xa của đèn  
+				const lightX = distance * Math.sin(azimuthAngle) * Math.cos(altitudeAngle);
+				const lightY = 50; // giữ nguyên vị trí của y
+				const lightZ = 30; // giữ nguyên vị trí của z
+			
+				// cập nhâp vị trí mới của góc độ sáng 
+				light.position.set(lightX, lightY, lightZ);
+			
+				//cập nhập lại ảnh mới
+				renderer.render(scene, camera);
+			}
+			
+			
+			  
+			  
+			  
+			  
+
+			window.addEventListener('resize', function() {
+				var width = window.innerWidth
+				var height = window.innerHeight
+				renderer.setSize(width, height)
+				camera.aspect = width / height
+				camera.updateProjectionMatrix()
+			})
+	
+			 var controls = new OrbitControls(camera, renderer.domElement)
+	
+			// var controls = new DragControls([cube], camera, renderer.domElement)
+	
+			//  var controls = new TrackballControls(camera, renderer.domElement)
+			//setBrightness(brightness);
+			controlCar()
+			//setBrightness()
+			
+
+		</script>
+	</body>
+</html>	
